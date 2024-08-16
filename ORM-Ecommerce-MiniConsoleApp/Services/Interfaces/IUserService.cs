@@ -9,5 +9,5 @@ public interface IUserService
     Task<UserGetDto> GetUserByIdAsync(int id);
     Task<UserGetDto> LoginAsync(string email, string password);
     Task<List<OrderGetDto>> GetUserOrdersAsync(int userId);
-    //Task<string> ExportUserOrdersToExcel(int userId);
+    Task<string> ExportUserOrdersToExcel(int userId);
 }

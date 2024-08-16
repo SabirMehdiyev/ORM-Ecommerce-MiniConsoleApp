@@ -6,4 +6,5 @@ public class OrderPostDto
     public decimal TotalAmount { get; set; }
     public OrderStatus Status { get; set; }
     public int UserId { get; set; }
+    public List<OrderDetailPostDto> OrderDetails { get; set; }
 }

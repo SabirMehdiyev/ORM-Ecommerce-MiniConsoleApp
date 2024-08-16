@@ -37,6 +37,23 @@ public class Repository<T> : IRepository<T> where T : BaseEntity
         return result;
     }
 
+    public async Task<List<T>> GetFilterAsync(Expression<Func<T, bool>> expression, params string[] includes)
+    {
+        var query = _context.Set<T>().Where(expression);
+
+
+        foreach (var include in includes)
+        {
+            query = query.Include(include);
+        }
+
+
+        var result = await query.ToListAsync();
+
+
+        return result;
+    }
+
     public async Task<T?> GetSingleAsync(Expression<Func<T, bool>> predicate, params string[] includes)
     {
         var query = _context.Set<T>().AsQueryable();

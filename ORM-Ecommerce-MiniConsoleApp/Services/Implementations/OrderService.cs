@@ -1,18 +1,16 @@
-﻿
-namespace ORM_Ecommerce_MiniConsoleApp.Services.Implementations;
+﻿namespace ORM_Ecommerce_MiniConsoleApp.Services.Implementations;
 
 public class OrderService : IOrderService
 {
     private readonly IOrderRepository _orderRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IProductRepository _productRepository;
     public OrderService()
     {
         _orderRepository = new OrderRepository();
         _userRepository = new UserRepository();
+        _productRepository = new ProductRepository();
     }
-
-
-
     public async Task CancelOrderAsync(int orderId)
     {
         var order = await _orderRepository.GetSingleAsync(o => o.Id == orderId);
@@ -43,33 +41,35 @@ public class OrderService : IOrderService
 
     public async Task CreateOrderAsync(OrderPostDto orderDto)
     {
-        if (orderDto.TotalAmount < 0)
-            throw new InvalidOrderException("Order amount cannot be less than zero.");
+        if (orderDto.OrderDetails == null || !orderDto.OrderDetails.Any())
+            throw new InvalidOrderException("Order must have at least one order detail.");
 
         var user = await _userRepository.GetSingleAsync(u => u.Id == orderDto.UserId);
         if (user == null)
             throw new InvalidOrderException("User not found.");
 
-        if ((int)orderDto.Status < 1 || (int)orderDto.Status >3)
-        {
-            throw new InvalidOrderException("Ivalid status value!");
-        }
-
         var order = new Order
         {
             OrderDate = DateTime.UtcNow,
-            TotalAmount = orderDto.TotalAmount,
+            TotalAmount = 0,  
             Status = OrderStatus.Pending,
-            UserId = orderDto.UserId
+            UserId = orderDto.UserId,
+            OrderDetails = new List<OrderDetail>()  
         };
 
         await _orderRepository.CreateAsync(order);
         await _orderRepository.SaveChangesAsync();
+
+        foreach (var detail in orderDto.OrderDetails)
+        {
+            await AddOrderDetailAsync(order.Id, detail);
+        }
     }
+
 
     public async Task<List<OrderDetailGetDto>> GetOrderDetailsByOrderIdAsync(int orderId)
     {
-        var order = await _orderRepository.GetSingleAsync(o => o.Id == orderId, "Order.OrderDetails");
+        var order = await _orderRepository.GetSingleAsync(o => o.Id == orderId, "OrderDetails");
         if (order == null)
             throw new NotFoundException("Order not found.");
 
@@ -79,8 +79,7 @@ public class OrderService : IOrderService
             Quantity = od.Quantity,
             OrderId = od.OrderId,
             ProductId = od.ProductId,
-            PricePerItem = od.PricePerItem,
-            ProductName = od.Product.Name 
+            PricePerItem = od.PricePerItem
         }).ToList();
 
         return orderDetailDtos;
@@ -106,6 +105,35 @@ public class OrderService : IOrderService
         }
 
         return orderDtos;
+    }
+    public async Task AddOrderDetailAsync(int orderId, OrderDetailPostDto orderDetailDto)
+    {
+        var order = await _orderRepository.GetSingleAsync(o => o.Id == orderId, "OrderDetails");
+        if (order == null)
+            throw new NotFoundException("Order not found.");
+
+        var product = await _productRepository.GetSingleAsync(p => p.Id == orderDetailDto.ProductId);
+        if (product == null)
+            throw new NotFoundException("Product not found.");
+
+        if (product.Stock < orderDetailDto.Quantity)
+            throw new InvalidOrderDetailException("Not enough stock for product.");
+
+        product.Stock -= orderDetailDto.Quantity;
+        _productRepository.Update(product);
+
+        var orderDetail = new OrderDetail
+        {
+            ProductId = orderDetailDto.ProductId,
+            Quantity = orderDetailDto.Quantity,
+            PricePerItem = orderDetailDto.PricePerItem,
+            OrderId = orderId
+        };
+
+        order.OrderDetails.Add(orderDetail);
+        order.TotalAmount += orderDetailDto.PricePerItem * orderDetailDto.Quantity;
+        _orderRepository.Update(order);
+        await _orderRepository.SaveChangesAsync();
     }
 
 

@@ -7,5 +7,9 @@ public class OrderDetailGetDto
     public int OrderId { get; set; }
     public int ProductId { get; set; }
     public decimal PricePerItem { get; set; }
-    public string ProductName { get; set; }
+
+    public override string ToString()
+    {
+        return $"OrderId:{OrderId}-Quantity:{Quantity} - PricePerItem:{PricePerItem}";
+    }
 }

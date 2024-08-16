@@ -8,4 +8,10 @@ public class OrderGetDto
     public OrderStatus Status { get; set; }
     public int UserId { get; set; }
     public List<OrderDetailGetDto> OrderDetails { get; set; }
+    public override string ToString()
+    {
+        return $"OrderId:{Id} - OrderDate:{OrderDate} - TotalAmount:{TotalAmount} - Status:{Status} - UserId {UserId}";
+    }
 }
+
+

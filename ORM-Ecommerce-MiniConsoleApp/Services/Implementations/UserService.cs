@@ -1,4 +1,6 @@
-﻿namespace ORM_Ecommerce_MiniConsoleApp.Services.Implementations;
+﻿using ClosedXML.Excel;
+
+namespace ORM_Ecommerce_MiniConsoleApp.Services.Implementations;
 
 public class UserService : IUserService
 {
@@ -35,7 +37,7 @@ public class UserService : IUserService
     }
     public async Task<UserGetDto> LoginAsync(string email, string password)
     {
-        var user = await _userRepository.GetSingleAsync(u => u.Email == email);
+        var user = await _userRepository.GetSingleAsync(u => u.Email.ToLower() == email.ToLower());
 
         if (user == null)
         {
@@ -44,7 +46,7 @@ public class UserService : IUserService
 
         if (user.Password != password)
         {
-            throw new UserAuthenticationException("Email or password incorrect");
+            throw new UserAuthenticationException("Email or password incorrect!Please try again!");
         }
 
         UserGetDto userDto = new UserGetDto
@@ -150,39 +152,7 @@ public class UserService : IUserService
 
         return userOrders;
     }
-    //public async Task<string> ExportUserOrdersToExcel(int userId)
-    //{
-    //    // Reuse GetUserOrdersAsync method to get the user's orders
-    //    var userOrders = await GetUserOrdersAsync(userId);
 
-    //    // Create a new Excel workbook
-    //    using var workbook = new XLWorkbook();
-    //    var worksheet = workbook.Worksheets.Add("User Orders");
-
-    //    // Add headers
-    //    worksheet.Cell(1, 1).Value = "Order ID";
-    //    worksheet.Cell(1, 2).Value = "Order Date";
-    //    worksheet.Cell(1, 3).Value = "Total Amount";
-    //    worksheet.Cell(1, 4).Value = "Status";
-
-    //    // Add rows with order data
-    //    for (int i = 0; i < userOrders.Count; i++)
-    //    {
-    //        var order = userOrders[i];
-    //        worksheet.Cell(i + 2, 1).Value = order.Id;
-    //        worksheet.Cell(i + 2, 2).Value = order.OrderDate;
-    //        worksheet.Cell(i + 2, 3).Value = order.TotalAmount;
-    //        worksheet.Cell(i + 2, 4).Value = order.Status.ToString();
-    //    }
-
-    //    // Save the Excel file to a location
-    //    string fileName = $"UserOrders_{userId}_{DateTime.UtcNow:yyyyMMddHHmmss}.xlsx";
-    //    string filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), fileName);
-    //    workbook.SaveAs(filePath);
-
-    //    // Return the path to the generated Excel file
-    //    return filePath;
-    //}
     private async Task<User> _getUserById(int id)
     {
         var user = await _userRepository.GetSingleAsync(x => x.Id == id);
@@ -192,5 +162,39 @@ public class UserService : IUserService
 
         return user;
     }
+
+    public async Task<string> ExportUserOrdersToExcel(int userId)
+    {
+        var userOrders = await GetUserOrdersAsync(userId);
+
+        using (var workbook = new XLWorkbook())
+        {
+            var worksheet = workbook.Worksheets.Add("Orders");
+
+            worksheet.Cell(1, 1).Value = "Order ID";
+            worksheet.Cell(1, 2).Value = "Order Date";
+            worksheet.Cell(1, 3).Value = "Total Amount";
+            worksheet.Cell(1, 4).Value = "Status";
+
+            int row = 2;
+            foreach (var order in userOrders)
+            {
+                worksheet.Cell(row, 1).Value = order.Id;
+                worksheet.Cell(row, 2).Value = order.OrderDate.ToString("yyyy-MM-dd HH:mm:ss");
+                worksheet.Cell(row, 3).Value = order.TotalAmount;
+                worksheet.Cell(row, 4).Value = order.Status.ToString();
+                row++;
+            }
+
+            var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+
+            var filePath = Path.Combine(desktopPath, $"User_{userId}_Orders.xlsx");
+
+            workbook.SaveAs(filePath);
+
+            return filePath;
+        }
+    }
+
 
 }

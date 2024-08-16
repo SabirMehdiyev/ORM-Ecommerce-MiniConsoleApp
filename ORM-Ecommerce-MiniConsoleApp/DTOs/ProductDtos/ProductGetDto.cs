@@ -12,11 +12,11 @@ public class ProductGetDto
     {
         if (Description is null)
         {
-            return $"{Id}-{Name}-{Price}-{Stock}";
+            return $"ProductId:{Id}-Product:{Name}-Price:{Price}-Stock:{Stock}";
         }
         else
         {
-            return $"{Id}-{Name}-{Price}-{Stock}-{Description}";
+            return $"ProductId:{Id}-Product:{Name}-Price:{Price}-Stock:{Stock}-Description:{Description}";
         }
     }
 }

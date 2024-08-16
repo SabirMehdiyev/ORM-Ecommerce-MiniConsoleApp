@@ -1,6 +1,4 @@
-﻿using ORM_Ecommerce_MiniConsoleApp.ENUMs;
-
-namespace ORM_Ecommerce_MiniConsoleApp.Models;
+﻿namespace ORM_Ecommerce_MiniConsoleApp.Models;
 
 public class Order:BaseEntity
 {
